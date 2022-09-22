@@ -1,0 +1,237 @@
+Req
+Batting Team, Bowling Team, Batter, Bowler, Match Format, Date, Inns, Over, Ball, Batsman Score off the ball, shot angle, shot ratio
+bowler type
+dismissal, dismissal type
+
+  MatchID: int,             ; iterator
+  Teams: {Team1, Team2},    ; matchsummary
+  Inns: int,                ; InningsX
+  Match Format: string,     ; matchsummary(MatchType)
+  Date: string,             ; matchsummary(MatchDateTime)
+  BattingTeam: string,      ; matchsummary({First,Second}BattingTeam)
+  BowlingTeam: string,      ;
+  Batter: string,           ; InningsX
+  BatterType: string,
+  Bowler: string,           ; InningsX
+  BowlerType: string,
+  Over: int,
+  Ball: int,
+  Dismissal: string         ; which batsman
+  DismisslType: string
+  RunsScored: int,
+  ShotAngle: float,
+  ShotRatio: float,
+
+MatchID,Team1,Team2,Inns,MatchFormat,Date,BattingTeam,BowlingTeam,Batter,BatterType,Bowler,BowlerType,Over,Ball,Dismissal,DismissalType,RunsScored,ShotAngle,ShotRatio
+
+------
+
+
+BASE_URL = https://scores.bcci.tv/feeds-international/scoringfeeds/
+------
+
+API = BASEURL + MATCH_ID + "matchsummary.js"
+
+Example:
+https://scores.bcci.tv/feeds-international/scoringfeeds/654-matchsummary.js
+
+Structure:
+MatchSummary
+  {0}
+    MatchID: int
+    CompetitionID: int
+    DivisionID: int
+    CompetitionName: string
+    Team1: string
+    Team2: string
+    Team1Logo: string
+    Team2Logo: string
+    MatchName: string(Team1 "VS" Team2)
+    MatchDate: string(dd MMM YYYY)
+    MatchType: string
+    FirstBattingTeamID: int
+    FirstBattingTeam: string
+    SecondBattingTeamID: int
+    SecondBattingTeam: string
+    TossDetails: string("Team won the Toss and elected to x")
+    BreakComments: string
+    GroundName: string
+    Comments: string ; result
+    PointsComments: string
+    RevisedOver: (string)(int)
+    RevisedTarget: (string)(int)
+    RequiredRunRate: (string)(float)
+    ChasingText: string
+    Target: (string)(int)
+    CurrentInnings: int
+    IsMatchEnd: bool
+    SecondInningsFirstBattingID: string
+    SecondInningsFirstBattingName: string
+    SecondInningsSecondBattingID: string
+    SecondInningsSecondBattingName: string
+    ThirdInningsFirstBattingID: string
+    ThirdInningsSecondBattingID: string
+    FourthInningsFirstBattingID: string
+    FourthInningsSecondBattingID: string
+    Umpire1Name: string
+    Umpire2Name: string
+    Umpire3Name: string
+    GroundUmpire1: string
+    GroundUmpire2: string
+    ThirdUmpire: string
+    Scorer1Name: string
+    VideoAnalyst1: string
+    VideoAnalyst2: string
+    Referee: string
+    Scorer2Name: string
+    ...
+    MatchDateTime: string("yyyy-mm-dd hh:mm:ss")
+
+
+
+
+
+------
+
+API = BASEURL + MATCH_ID + "-Innings" + (1 or 2) + ".js
+
+Example: 
+https://scores.bcci.tv/feeds-international/scoringfeeds/654-Innings2.js
+
+Structure:
+InningsX
+  BattingCard
+    {0-10}
+      MatchID: int
+      InningsNo: int
+      TeamID: int
+      PlayerID: string
+      PlayerName: string
+      PlayerShortName: string
+      PlayerImage: string
+      PlayingOrder: int
+      MatchPlayingOrder: int
+      BowlerName: string
+      OutDesc: string
+      ShortOutDesc: string
+      Runs: int
+      Balls: int
+      DotBalls: int
+      DotBallPercentage: (string)(float)
+      DotBallFrequency: (string)(float)
+      Ones: int
+      Twos: int
+      Threes: int
+      Fours: int
+      Sixes: int
+      BoundaryPercentage: (string)(float)
+      BoundaryFrequency: (string)(float)
+      StrikeRate: (string)(float)
+      MinOver: int
+      MinStrikerOver: int
+      WicketNo: int
+      AgainstFast: int
+      AgainstSpin: int
+      AgainstFastPercent: (string)(float)
+      AgainstSpinPercent: (string)(float)
+      PLAYER_ID: int
+  Extras
+    0
+      MatchID
+      InningsNo
+      TeamID
+  FallOfWickets
+  WagonWheel
+    0 <= int <= total non-dotballs
+      BallID: string
+      StrikerID: string
+      BowlerID: string
+      FielderAngle: float
+      FielderLengthRatio: float
+      Runs: int
+      IsFour: bool
+      IsSix: bool
+      BatType: string("L" or "R")
+  PartnershipScores
+  PartnershipBreak
+  BowlingCard
+  ManhattanGraph
+  ManhattanWickets
+  OverHistory
+    0 <= int <= total balls bowled
+      BallID: string ; not always required, check if it exits
+      BallUniqueID: (string)(int)
+      ActualBallNo: (string)(int)
+      MatchID: (string)(int)
+      InningsNo: int
+      BattingTeamID: (string)(int)
+      TeamName: string
+      StrikerID: string
+      NonStrikerID: string
+      BatsManName: string
+      BowlerID: string
+      BowlerName: string
+      BowlerType: ???
+      OverNo: int
+      OverName: string(OverNo in words)
+      BallNo: (string)(int)
+      Runs: (string)(int)
+      BallRuns: (string)(int)
+      RunsText: (string)(BallRuns in words)
+      ActualRuns: (string)(int)
+      IsOne: bool
+      IsTwo: bool
+      IsThree: bool
+      IsDotBall: bool
+      Extras: bool
+      IsWide: bool
+      IsNoBall: bool
+      IsBye: bool
+      IsLegBye: bool
+      IsFour: bool
+      IsSix: bool
+      IsWicket: bool
+      WicketType: ???
+      Wickets: ???
+      VideoFile: string
+      IsBowlerWicket: bool
+      CommentOver: string("Over 19.2")
+      BallName: string("19.2")
+      CommentStrikers: string("x bowler TO y batter")
+      NewCommentary: string(CommentStrikers + event)
+      Commentary: string
+      UPDCommentary: string
+      Day: (string)(int)
+      SESSION_NO: int(1-3)
+      IsExtra: bool
+      OutBatsManID: string
+      SNO: (string)(int) (???)
+      Xpitch: (string)(float)
+      Ypitch: (string)(float)
+      RunRuns: (string)(int)
+      IsMaiden: bool
+      OverImage: ???
+      BowlTypeID: ???
+      BowlTypeName: string
+      ShotTypeID: (string)(int)
+      ShotType: string
+      IsBouncer: bool
+      IsFreeHit: bool
+      BallCount: (string)(int)
+      BCCheck: (string)(int) (???)
+      TotalRuns: (string)(int)
+      TotalWickets: (string)(int)
+      FiveHaul: bool or (string)(int)
+      HatCheck: (string)("PlayerID - bool")
+      Flag: bool or (string)(int)
+      FlagSet: (string)(int)
+      PenaltyRuns: (string)(int)
+      IsFifty: bool
+      IsHundred: bool
+      IsTwoHundred: bool
+      IsHattrick: bool
+  WagonWheelSummary
+  battingheadtohead
+  bowlingheadtohead
+
+
