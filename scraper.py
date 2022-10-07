@@ -81,8 +81,10 @@ def get_match(id):
                 if delivery['BowlerID'] == player['PlayerID']:
                     table = str.maketrans('', '', string.ascii_lowercase + ' ')
                     bowler_type = player['BowlingProficiency'].translate(table).strip()
-            over     = delivery['OverNo']
-            ball     = delivery['BallNo']
+            over = delivery['OverNo']
+            ball = delivery['BallNo']
+            if ball == 99:
+                continue
             dismissal_type = delivery['WicketType']
             runs_scored = delivery['ActualRuns']
             extras = delivery['Extras']
