@@ -62,8 +62,8 @@ def get_match(id):
         wheel = innings['WagonWheel']
         over_hist = innings['OverHistory']
         ings = i
-        batting_team = _first_batting if i == 1 else _second_batting
-        bowling_team = _second_batting if i == 1 else _first_batting
+        batting_team = _first_batting if i in (1,3) else _second_batting
+        bowling_team = _second_batting if i in (1,3) else _first_batting
         actual_delivery_count = 0
         for delivery in over_hist:
             actual_delivery_count += 1
@@ -140,7 +140,7 @@ def main():
     else:
         with open(file, 'a') as f:
             f.write(','.join(fields) + '\n')
-    while len(error_cnt) < 100:
+    while len(error_cnt) <= 100:
         if missing_ids:
             match = get_match(missing_ids.pop(0))
         else:
