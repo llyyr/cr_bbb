@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-# IMPORT STATEMENTS
 import os
 import numpy as np
 import requests
@@ -16,7 +15,6 @@ def helper1(inp):
         return f(inp)
     except IndexError as e:
         return np.nan
-
 
 def helper2(inp):
     f = lambda x: re.findall('to.+', x)[0].split(",")[2].split("for")[0].lower()
@@ -40,14 +38,12 @@ def get_variation(x):
             return i
     return "stock"
 
-
 def get_length(x):
     lengths = ["length ball", "back of a length", "half volley", "full toss", "yorker", "short", "bouncer"]
     for i in lengths:
         if i in x:
             return i
     return np.nan
-
 
 def get_area(x):
     try:
@@ -102,7 +98,6 @@ def get_fielder(x):
     except IndexError as e:
         return np.nan
 
-
 def get_fielder_action(inp):
     f1 = lambda x: re.findall('fielded.+|caught.+|dropped.+',x)[0].split('by')[0].strip()
     try: 
@@ -113,27 +108,33 @@ def get_fielder_action(inp):
     except IndexError as e:
         return ""
 
-
-#  BBB EXTRACTION
-
 skip = ['Caribbean Premier League', "'A' One-Day Quad-Series", 'England Domestic T20', 'JLT One-Day Cup', 'Sheffield Shield']
 def get_bbb(fixtureID):
     scorecard = requests.get("https://apiv2.cricket.com.au/web/views/scorecard?FixtureId=" + str(fixtureID) + "&jsconfig=eccn:true&format=json").json()
-    if not 'fixture' in scorecard and not 'players' in scorecard:
-        print('Invalid match ' + str(fixtureID))
-        return
-    if scorecard['fixture']['isWomensMatch'] or scorecard['fixture']['competition']['isWomensCompetition'] or not scorecard['fixture']['isCompleted']:
-        print('Skipping match ' + str(fixtureID))
-        return
-    for tourney in skip:
-        if tourney.lower() in scorecard['fixture']['competition']['name'].lower():
-            print('Skipping ', tourney)
+    try: 
+        if not 'fixture' in scorecard and not 'players' in scorecard:
+            print('Invalid match ' + str(fixtureID))
+            error_cnt.append(fixtureID)
             return
+        if scorecard['fixture']['isWomensMatch'] or scorecard['fixture']['competition']['isWomensCompetition'] or not scorecard['fixture']['isCompleted']:
+            print('Skipping Womens match' + str(fixtureID))
+            return
+        for tourney in skip:
+            if tourney.lower() in scorecard['fixture']['competition']['name'].lower():
+                print('Skipping', tourney)
+                return
+    except KeyError as e:
+        print('KeyError', fixtureID)
+        error_cnt.append(fixtureID)
+        return
     try:
         fixture_id = scorecard['fixture']['id']
         team_1 = scorecard['fixture']['homeTeam']['name'].replace(' Men', '')
         if len(team_1.split()) >= 2 and team_1.split()[-1] == 'A':
-            print('Skipping ', team_1)
+            print('Skipping \'A\'', fixtureID)
+            return
+        if len(team_1.split()) >= 2 and 'U19' in team_1:
+            print('Skipping U19', fixtureID)
             return
         _team_1_id = scorecard['fixture']['homeTeam']['id']
         team_2 = scorecard['fixture']['awayTeam']['name'].replace(' Men', '')
@@ -141,6 +142,8 @@ def get_bbb(fixtureID):
         format = scorecard['fixture']['competition']['formats'][0]['displayName'].split()[0]
         ground = scorecard['fixture']['venue']['name']
     except KeyError as e:
+        print('KeyError', fixtureID)
+        error_cnt.append(fixtureID)
         return
     players = scorecard['players']
     bbb = pd.DataFrame()
@@ -149,14 +152,19 @@ def get_bbb(fixtureID):
         url = "https://apiv2.cricket.com.au/web/views/comments?FixtureId="+ str(fixtureID)+ "&jsconfig=eccn:true&OverLimit=400&lastOverNumber=&IncludeVideoReplays=false&format=json&inningNumber=" + str(inning)
         root = json.loads(requests.get(url).content)
         if not 'inning' in root:
-            continue
+            print('Skipping', fixtureID)
+            return
         print(fixtureID, inning)
         info = []
-        innings = root['inning']['inningNumber']
-        batting_team_id = root['inning']['battingTeamId']
-        bowling_team_id = root['inning']['bowlingTeamId']
-        batting_team = team_1 if batting_team_id == _team_1_id else team_2
-        bowling_team = team_2 if bowling_team_id == _team_2_id else team_1
+        try:
+            innings = root['inning']['inningNumber']
+            batting_team_id = root['inning']['battingTeamId']
+            bowling_team_id = root['inning']['bowlingTeamId']
+            batting_team = team_1 if batting_team_id == _team_1_id else team_2
+            bowling_team = team_2 if bowling_team_id == _team_2_id else team_1
+        except KeyError as e:
+            print('KeyError', fixtureID)
+            return
         for over in root['inning']['overs']:
             over_num = over['overNumber']
             if over_num == 0:
@@ -294,7 +302,7 @@ def get_bbb(fixtureID):
 error_cnt = []
 def main():
     global error_cnt
-    idx = 0
+    idx = 5449
     file = 'out.csv'
     missing_ids = set()
     if os.path.isfile(file):
@@ -307,7 +315,7 @@ def main():
                     idx = id+1
         if missing_ids:
             missing_ids = sorted(set(range(min(missing_ids), max(missing_ids) + 1)).difference(missing_ids))[-min(20, len(missing_ids)):]
-    while len(error_cnt) <= 100:
+    while len(error_cnt) <= 500:
         if missing_ids:
             match = get_bbb(missing_ids.pop(0))
         else:
@@ -315,9 +323,9 @@ def main():
             idx += 1
         if type(match) != type(None):
             match.to_csv(file, mode='a', header=not os.path.isfile(file), index=False)
-        if len(error_cnt) == 99:
-            if sorted(error_cnt) == list(range(min(error_cnt), max(error_cnt)+1)):
-                error_cnt.clear()
+        if len(error_cnt) >= 490:
+            if sorted(error_cnt) != list(range(min(error_cnt), max(error_cnt)+1)):
+                error_cnt = []
 
 
 main()
