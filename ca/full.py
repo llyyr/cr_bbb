@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
 import os
+from geopy import Nominatim # pip3 install geopy
 import numpy as np
 import requests
 import re
 import pandas as pd # Need pandas version 1.3
-import json
+
+
 pd.options.display.float_format = '{:.2f}'.format
+geolocator = Nominatim(user_agent="geoapiExercises")
 
 
 def helper1(inp):
@@ -109,15 +112,19 @@ def get_fielder_action(inp):
         return ""
 
 skip = ['Caribbean Premier League', "'A' One-Day Quad-Series", 'England Domestic T20', 'JLT One-Day Cup', 'Sheffield Shield']
+country_cache = {'Central Broward Regional Park Stadium Turf Ground': 'United States', 'Sydney': 'Australia', 'Guildford': 'United Kingdom', 'Durban': 'South Africa', 'Cape Town': 'South Africa', 'Pune': 'India', 'Durham': 'United States', 'Moe': 'United States', 'Nelson': 'New Zealand', 'Dublin': 'Ireland', 'Grenada': 'Grenada', 'Hamilton': 'Canada', 'Mumbai': 'India', 'Hyderabad': 'India', 'Christchurch': 'New Zealand', 'Visakhapatnam': 'India', 'Nettleworth': 'United Kingdom', 'Belfast': 'United Kingdom', 'Port of Spain': 'Trinidad and Tobago', 'Karachi': 'Pakistan', 'Brisbane': 'Australia', 'Scarborough': 'United Kingdom', 'Colombo': 'Sri Lanka', 'Dunedin': 'New Zealand', 'Perth': 'Australia', 'Docklands': 'Australia', 'Coffs Harbour': 'Australia', 'Amstelveen': 'Netherlands', 'Basseterre': 'Saint Kitts and Nevis', 'Multan': 'Pakistan', 'Kolkata': 'India', 'Bulawayo': 'Zimbabwe', 'Antigua': 'Antigua and Barbuda', 'Eastbourne': 'United Kingdom', 'Neath': 'United Kingdom', 'Bankstown': 'Australia', 'Dehradun': 'India', 'Thiruvananthapuram': 'India', 'Adelaide': 'Australia', 'Beckenham': 'United Kingdom', 'Chelmsford': 'United Kingdom', 'Southampton': 'United Kingdom', 'Hobart': 'Australia', 'Port Elizabeth': 'South Africa', 'Galle': 'Germany', 'Clontarf Cricket Club': 'Ireland', 'Sylhet Divisional Stadium': 'Bangladesh', 'Bengaluru': 'India', 'Auckland': 'New Zealand', 'Southport': 'United Kingdom', 'Guwahati': 'India', 'Lucknow': 'India', 'Sedbergh': 'United Kingdom', 'Nagpur': 'India', 'Radlett': 'United Kingdom', 'Cheltenham': 'United Kingdom', 'Kanpur': 'India', 'Melbourne': 'Australia', 'Delhi': 'India', 'East London': 'South Africa', 'Lahore': 'Pakistan', 'Sharjah': 'United Arab Emirates', 'Drummoyne': 'Australia', 'Centurion': 'South Africa', 'Abu Dhabi': 'United Arab Emirates', 'Newport': 'United States', 'Ahmedabad': 'India', 'Kandy': 'Sri Lanka', 'Derby': 'United Kingdom', 'The Ageas Bowl': 'United Kingdom', 'Gros Islet': 'Saint Lucia', 'Utrecht': 'Netherlands', 'Gosforth': 'United Kingdom', 'Derry': 'United Kingdom', 'Jamaica': 'Jamaica', 'London': 'United Kingdom', 'Ranchi': 'India', 'York': 'United Kingdom', 'Alice Springs': 'Australia', 'Cuttack': 'India', 'Geelong': 'Australia', 'Birmingham': 'United Kingdom', 'Liverpool ': 'United Kingdom', 'Townsville': 'Australia', 'Indore': 'India', 'Wollongong': 'Australia', 'Taunton': 'United Kingdom', 'Harare': 'Zimbabwe', 'Nottingham': 'United Kingdom', 'Wellington': 'New Zealand', 'Rajkot': 'India', 'Arundel': 'United Kingdom', 'Leeds': 'United Kingdom', 'Mirpur': 'Pakistan', 'Trinidad': 'Trinidad and Tobago', 'Chennai': 'India', 'Worcester': 'United States', 'Canberra': 'Australia', 'Al Amarat': 'Oman', 'Cairns': 'Australia', 'North Sydney': 'Australia', 'Dubai': 'United Arab Emirates', 'Potchefstroom': 'South Africa', 'Paarl': 'South Africa', 'ANZ Stadium': 'Australia', 'Bridgetown': 'Barbados', 'Manchester': 'United Kingdom', 'Bristol': 'United Kingdom', 'The Hague': 'Netherlands', 'Grantham': 'United Kingdom', 'Canterbury': 'United Kingdom', 'St. Kilda': 'United Kingdom', 'Hove': 'United Kingdom', 'Hambantota': 'Sri Lanka', 'Dambulla': 'Sri Lanka', 'Northwood': 'United States', 'Gold Coast': 'Australia', 'Greater Noida': 'India', 'Chesterfield': 'United States', 'Edinburgh': 'United Kingdom', 'Zahur Ahmed Chowdhury Stadium': 'Bangladesh', 'Bay Oval. Mount Maunganui': 'New Zealand', 'Harare Sports Club': 'Zimbabwe', 'Cardiff': 'United Kingdom', 'Launceston': 'Australia', 'Dominica': 'Dominican Republic', 'Jaipur': 'India', 'Johannesburg': 'South Africa', 'Chattogram': 'Bangladesh', 'Rotterdam': 'Netherlands', 'Blackpool': 'United Kingdom', 'Leicester': 'United Kingdom', 'Dharamsala': 'India', 'Guyana': 'Guyana', 'Rawalpindi': 'Pakistan', 'Northampton': 'United Kingdom', 'Bloemfontein': 'South Africa', 'Mohali': 'India', 'Napier': 'New Zealand'}
 def get_bbb(fixtureID):
+    global country_cache
     scorecard = requests.get("https://apiv2.cricket.com.au/web/views/scorecard?FixtureId=" + str(fixtureID) + "&jsconfig=eccn:true&format=json").json()
     try: 
         if not 'fixture' in scorecard and not 'players' in scorecard:
             print('Invalid match ' + str(fixtureID))
-            error_cnt.append(fixtureID)
             return
-        if scorecard['fixture']['isWomensMatch'] or scorecard['fixture']['competition']['isWomensCompetition'] or not scorecard['fixture']['isCompleted']:
-            print('Skipping Womens match' + str(fixtureID))
+        if scorecard['fixture']['isWomensMatch'] or scorecard['fixture']['competition']['isWomensCompetition']:
+            print('Skipping womens match', fixtureID)
+            return
+        if not scorecard['fixture']['isCompleted']:
+            print('Skipping incomplete match', fixtureID)
             return
         for tourney in skip:
             if tourney.lower() in scorecard['fixture']['competition']['name'].lower():
@@ -125,7 +132,6 @@ def get_bbb(fixtureID):
                 return
     except KeyError as e:
         print('KeyError', fixtureID)
-        error_cnt.append(fixtureID)
         return
     try:
         fixture_id = scorecard['fixture']['id']
@@ -140,17 +146,30 @@ def get_bbb(fixtureID):
         team_2 = scorecard['fixture']['awayTeam']['name'].replace(' Men', '')
         _team_2_id = scorecard['fixture']['awayTeam']['id']
         format = scorecard['fixture']['competition']['formats'][0]['displayName'].split()[0]
+        if format not in ['Test', 'ODI', 'T20', 'One-Day', 'First-Class']:
+            print('Skipping invalid format', fixtureID)
+            return
         ground = scorecard['fixture']['venue']['name']
+        country = np.nan
+        try:
+            if ground != 'TBC':
+                if ground not in country_cache:
+                    if len(ground.split(', ')) >= 2:
+                        ground = ground.split(', ')[-1]
+                    country = geolocator.geocode(ground, language='en').raw['display_name'].split(', ')[-1]
+                    country_cache[ground] = country
+                else:
+                    country = country_cache[ground]
+        except:
+            pass
     except KeyError as e:
         print('KeyError', fixtureID)
-        error_cnt.append(fixtureID)
         return
     players = scorecard['players']
     bbb = pd.DataFrame()
-    num_inns = 4 if format == 'Test' else 2
+    num_inns = 4 if format in ['Test', 'First-Class'] else 2
     for inning in np.arange(1, num_inns+1):
-        url = "https://apiv2.cricket.com.au/web/views/comments?FixtureId="+ str(fixtureID)+ "&jsconfig=eccn:true&OverLimit=400&lastOverNumber=&IncludeVideoReplays=false&format=json&inningNumber=" + str(inning)
-        root = json.loads(requests.get(url).content)
+        root = requests.get("https://apiv2.cricket.com.au/web/views/comments?FixtureId="+ str(fixtureID)+ "&jsconfig=eccn:true&OverLimit=400&lastOverNumber=&IncludeVideoReplays=false&format=json&inningNumber=" + str(inning)).json()
         if not 'inning' in root:
             print('Skipping', fixtureID)
             return
@@ -249,7 +268,6 @@ def get_bbb(fixtureID):
                     timestamp = ball['ballDateTime'] 
                 except KeyError as e:
                     timestamp = np.nan
-                    
                 
                 for comment in ball['comments']:
                     if comment['commentTypeId'] in ['EndOfOver','StartOfInning']:
@@ -264,11 +282,10 @@ def get_bbb(fixtureID):
                     commentary = commentary.replace("L.B.W.", "LBW").replace("Bowled.", "Bowled").replace("Run out.", "Run Out")
                     commentary = commentary.replace("Caught.", "Caught").replace("Stumped.", "Stumped").replace("REFERRAL.", "")
                     commentary = commentary.replace("NEW BALL.", "").replace("FREE HIT.", "")
-                    
-#fixture_id, team_1, team_2, format, ground, innings, batting_team, bowling_team, over_num, match_date, ball_num, is_wicket, batsman, batsman_hand, bowler, bowler_hand, bowler_type, dismissal_player, shot_angle, shot_magnitude, fielding_position, runs_conceded, extras, runs, runs_scored, timestamp, commentary
+
                 fields = {'fixtureId': fixture_id, 'team1': team_1, 'team2': team_2,
                           'matchDate': match_date, 'format': format, 'ground': ground,
-                          'inns': innings, 'battingTeam': batting_team,
+                          'country': country, 'inns': innings, 'battingTeam': batting_team,
                           'bowlingTeam': bowling_team, 'batsman': batsman, 'bowler': bowler,
                           'batsmanHand': batsman_hand, 'bowlerHand': bowler_hand,
                           'bowlerType': bowler_type, 'over': over_num, 'ball': ball_num,
@@ -285,25 +302,26 @@ def get_bbb(fixtureID):
         info = pd.DataFrame(info)
         bbb = pd.concat((bbb, info))
         if bbb.empty: return
-        bbb["len/var"] = bbb["commentary"].apply(helper3)
-        bbb["shot"] = bbb["commentary"].apply(helper1)
-        bbb["zone"] = bbb["commentary"].apply(helper2)
-        bbb["shot_type"] = bbb["shot"].apply(lambda x: x.split()[-1] if type(x)!=float else np.nan)
-        bbb["variation"] = bbb["len/var"].apply(lambda x: get_variation(x) if type(x)!=float else np.nan)
-        bbb["length"] = bbb["len/var"].apply(lambda x: get_length(x) if type(x)!=float else np.nan)
-        bbb["area"] = bbb["zone"].apply(get_area)
-        bbb["control"] = bbb["zone"].apply(get_control)
-        bbb["line"] = bbb["shot"].apply(get_line)
-        bbb["foot"] = bbb["shot"].apply(get_foot)
-        bbb['fielder_action'] = bbb['commentary'].apply(get_fielder_action)
-        bbb['fielder'] = bbb['commentary'].apply(get_fielder)
+        try:
+            bbb["len/var"] = bbb["commentary"].apply(helper3)
+            bbb["shot"] = bbb["commentary"].apply(helper1)
+            bbb["zone"] = bbb["commentary"].apply(helper2)
+            bbb["shot_type"] = bbb["shot"].apply(lambda x: x.split()[-1] if type(x)!=float else np.nan)
+            bbb["variation"] = bbb["len/var"].apply(lambda x: get_variation(x) if type(x)!=float else np.nan)
+            bbb["length"] = bbb["len/var"].apply(lambda x: get_length(x) if type(x)!=float else np.nan)
+            bbb["area"] = bbb["zone"].apply(get_area)
+            bbb["control"] = bbb["zone"].apply(get_control)
+            bbb["line"] = bbb["shot"].apply(get_line)
+            bbb["foot"] = bbb["shot"].apply(get_foot)
+            bbb['fielder_action'] = bbb['commentary'].apply(get_fielder_action)
+            bbb['fielder'] = bbb['commentary'].apply(get_fielder)
+        except:
+            print('Failed to parse commentary for', fixtureID)
     return(bbb)
 
-error_cnt = []
 def main():
-    global error_cnt
-    idx = 5449
-    file = 'out.csv'
+    idx = 0
+    file = 'full.csv'
     missing_ids = set()
     if os.path.isfile(file):
         with open(file, 'r') as f:
@@ -314,8 +332,9 @@ def main():
                     missing_ids.add(id)
                     idx = id+1
         if missing_ids:
-            missing_ids = sorted(set(range(min(missing_ids), max(missing_ids) + 1)).difference(missing_ids))[-min(20, len(missing_ids)):]
-    while len(error_cnt) <= 500:
+            missing_ids = sorted(set(range(min(missing_ids), max(missing_ids) + 1)).difference(missing_ids)) #[-min(20, len(missing_ids)):]
+            missing_ids = list(filter(lambda x: x > 5400, missing_ids))
+    while True:
         if missing_ids:
             match = get_bbb(missing_ids.pop(0))
         else:
@@ -323,9 +342,5 @@ def main():
             idx += 1
         if type(match) != type(None):
             match.to_csv(file, mode='a', header=not os.path.isfile(file), index=False)
-        if len(error_cnt) >= 490:
-            if sorted(error_cnt) != list(range(min(error_cnt), max(error_cnt)+1)):
-                error_cnt = []
-
 
 main()
