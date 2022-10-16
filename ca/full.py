@@ -173,7 +173,6 @@ def get_bbb(fixtureID):
         if not 'inning' in root:
             print('Skipping', fixtureID)
             return
-        print(fixtureID, inning)
         info = []
         try:
             innings = root['inning']['inningNumber']
@@ -333,14 +332,17 @@ def main():
                     idx = id+1
         if missing_ids:
             missing_ids = sorted(set(range(min(missing_ids), max(missing_ids) + 1)).difference(missing_ids)) #[-min(20, len(missing_ids)):]
-            missing_ids = list(filter(lambda x: x > 5400, missing_ids))
+            missing_ids = list(filter(lambda x: x > 12800, missing_ids))
     while True:
         if missing_ids:
-            match = get_bbb(missing_ids.pop(0))
+            fixtureID = missing_ids.pop(0)
+            match = get_bbb(fixtureID)
         else:
             match = get_bbb(idx)
             idx += 1
         if type(match) != type(None):
+            output = fixtureID if fixtureID else idx
+            print(output)
             match.to_csv(file, mode='a', header=not os.path.isfile(file), index=False)
 
 main()
