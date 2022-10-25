@@ -1,1 +1,7 @@
 *.csv
+*.ipynb
+t20s/bbb_compile_update.py
+t20s/bbb_compiler.py
+t20s/bbb_organiser.py
+t20s/match_bbb_scrape.py
+t20s/scrape_1match.py
