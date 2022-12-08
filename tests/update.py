@@ -51,15 +51,14 @@ def get_match_data(match_id):
             if i > page_count:
                 break
             r = req.get(url.format(match_id, i, inn)).json()
-            # print(url.format(match_id, i, inn), page_count)
             if 'commentary' in r: 
                 page_count = r['commentary']['pageCount']
                 items += r['commentary']['items']
                 if items == []:
-                    print('no item on page', url.format(match_id, i, inn), page_count)
+                    print('no item on', url.format(match_id, i, inn), page_count)
                     break
             else:
-                print('Comms not found')
+                print('no comms on page', url.format(match_id, i, inn), page_count)
                 continue
         data[inn] = items
     if len(data[1] + data[2] + data[3] + data[4]) == 0:
