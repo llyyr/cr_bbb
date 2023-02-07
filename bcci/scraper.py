@@ -41,9 +41,15 @@ def get_match(id):
     if summary['IsMatchEnd'] == 0:
         print('Skipping live match ' + team_1 + ' v ' + team_2)
         return
+    elif 'abandoned' in summary['Comments'].lower():
+        print('Skipping abandoned match ' + team_1 + ' v ' + team_2)
+        return
     ipl = 0
-    if "ipl" in summary['CompetitionName'].lower():
+    if 'ipl' in summary['CompetitionName'].lower():
         ipl = 1
+    elif 'warm-up' in summary['CompetitionName'].lower():
+        print('Skipping warmup match ' + team_1 + ' v ' + team_2 + ', ' + summary['CompetitionName'])
+        return
     if ipl == 0 and (team_1 not in FULL_MEMBERS and team_2 not in FULL_MEMBERS):
         print('Skipping ' + team_1 + ' v ' + team_2)
         return
