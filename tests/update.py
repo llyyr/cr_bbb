@@ -27,9 +27,9 @@ def get_matids(min=current_year, max=current_year):
     for y in range(min, max+1):
         print('Fetching results from', y)
         r = req.get(url.format(y)).text
-        d = bs4.BeautifulSoup(r, 'html.parser').select('.data1')
+        d = bs4.BeautifulSoup(r, 'html.parser').select('table')[0].select('tbody')[0].select('tr')
         for ele in d:
-            match_id = int(ele.select('td')[-1].select('.data-link')[0].attrs['href'].split('/')[-1].split('.')[0])
+            match_id = int(ele.select('td')[-1].select('a')[0].attrs['href'].split('/')[-2].split('-')[-1])
             date = ele.select('td')[-2].text
             if ' - ' in date:
                 date, _ = date.split(' - ')
