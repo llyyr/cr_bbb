@@ -1,16 +1,30 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.11
 
 import os
 from geopy import Nominatim # pip3 install geopy
 import numpy as np
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 import re
 import pandas as pd # Need pandas version 1.3
-
 
 pd.options.display.float_format = '{:.2f}'.format
 geolocator = Nominatim(user_agent="geoapiExercises")
 
+def make_request(url):
+    session = requests.Session()
+    session.headers.update({"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0"})
+    retries = Retry(total=10, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+    session.mount('http://', HTTPAdapter(max_retries=retries))
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+    try:
+        print(f"Trying {url}")
+        response = session.get(url, timeout=10)
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print("Error: ", e)
+        return
 
 def helper1(inp):
     f = lambda x: re.findall('to.+', x)[0].split(",")[1].lower()
@@ -27,7 +41,7 @@ def helper2(inp):
         return np.nan
 
 def helper3(inp):
-    f = lambda x: re.findall("\. (.+)", re.findall('to.+', x)[0].split(",")[0])[0].lower()
+    f = lambda x: re.findall(r"\. (.+)", re.findall('to.+', x)[0].split(",")[0])[0].lower()
     try: 
         return f(inp)
     except IndexError as e:
@@ -62,11 +76,21 @@ def get_area(x):
 
 def get_control(x):
     try:
-        controls = ["under control", "well timed", "mis-timed", "edge", "miss"]
+        controls = ["under control", "well timed", "mis-timed", "edge", "miss", "uncontrolled"]
         for i in controls:
             if i in x:
                 return i
         return "under control"
+    except TypeError as e:
+        return np.nan
+
+def get_elevation(x):
+    try:
+        elevation = ["in the air"]
+        for i in elevation:
+            if i in x:
+                return i
+        return "grounded"
     except TypeError as e:
         return np.nan
 
@@ -81,9 +105,7 @@ def get_line(x):
         return np.nan
 
 def get_foot(x):
-    feet = ["no foot movement", "front foot", "back foot", "down the track", "backing away", "in front", "deep in crease",
-           "ducked"]
-    
+    feet = ["no foot movement", "front foot", "back foot", "down the track", "backing away", "in front", "deep in crease", "ducked"]
     try:
         for i in feet:
             if i in x:
@@ -115,7 +137,7 @@ skip = ['Caribbean Premier League', "'A' One-Day Quad-Series", 'England Domestic
 country_cache = {'Central Broward Regional Park Stadium Turf Ground': 'United States', 'Sydney': 'Australia', 'Guildford': 'United Kingdom', 'Durban': 'South Africa', 'Cape Town': 'South Africa', 'Pune': 'India', 'Durham': 'United States', 'Moe': 'United States', 'Nelson': 'New Zealand', 'Dublin': 'Ireland', 'Grenada': 'Grenada', 'Hamilton': 'Canada', 'Mumbai': 'India', 'Hyderabad': 'India', 'Christchurch': 'New Zealand', 'Visakhapatnam': 'India', 'Nettleworth': 'United Kingdom', 'Belfast': 'United Kingdom', 'Port of Spain': 'Trinidad and Tobago', 'Karachi': 'Pakistan', 'Brisbane': 'Australia', 'Scarborough': 'United Kingdom', 'Colombo': 'Sri Lanka', 'Dunedin': 'New Zealand', 'Perth': 'Australia', 'Docklands': 'Australia', 'Coffs Harbour': 'Australia', 'Amstelveen': 'Netherlands', 'Basseterre': 'Saint Kitts and Nevis', 'Multan': 'Pakistan', 'Kolkata': 'India', 'Bulawayo': 'Zimbabwe', 'Antigua': 'Antigua and Barbuda', 'Eastbourne': 'United Kingdom', 'Neath': 'United Kingdom', 'Bankstown': 'Australia', 'Dehradun': 'India', 'Thiruvananthapuram': 'India', 'Adelaide': 'Australia', 'Beckenham': 'United Kingdom', 'Chelmsford': 'United Kingdom', 'Southampton': 'United Kingdom', 'Hobart': 'Australia', 'Port Elizabeth': 'South Africa', 'Galle': 'Germany', 'Clontarf Cricket Club': 'Ireland', 'Sylhet Divisional Stadium': 'Bangladesh', 'Bengaluru': 'India', 'Auckland': 'New Zealand', 'Southport': 'United Kingdom', 'Guwahati': 'India', 'Lucknow': 'India', 'Sedbergh': 'United Kingdom', 'Nagpur': 'India', 'Radlett': 'United Kingdom', 'Cheltenham': 'United Kingdom', 'Kanpur': 'India', 'Melbourne': 'Australia', 'Delhi': 'India', 'East London': 'South Africa', 'Lahore': 'Pakistan', 'Sharjah': 'United Arab Emirates', 'Drummoyne': 'Australia', 'Centurion': 'South Africa', 'Abu Dhabi': 'United Arab Emirates', 'Newport': 'United States', 'Ahmedabad': 'India', 'Kandy': 'Sri Lanka', 'Derby': 'United Kingdom', 'The Ageas Bowl': 'United Kingdom', 'Gros Islet': 'Saint Lucia', 'Utrecht': 'Netherlands', 'Gosforth': 'United Kingdom', 'Derry': 'United Kingdom', 'Jamaica': 'Jamaica', 'London': 'United Kingdom', 'Ranchi': 'India', 'York': 'United Kingdom', 'Alice Springs': 'Australia', 'Cuttack': 'India', 'Geelong': 'Australia', 'Birmingham': 'United Kingdom', 'Liverpool ': 'United Kingdom', 'Townsville': 'Australia', 'Indore': 'India', 'Wollongong': 'Australia', 'Taunton': 'United Kingdom', 'Harare': 'Zimbabwe', 'Nottingham': 'United Kingdom', 'Wellington': 'New Zealand', 'Rajkot': 'India', 'Arundel': 'United Kingdom', 'Leeds': 'United Kingdom', 'Mirpur': 'Pakistan', 'Trinidad': 'Trinidad and Tobago', 'Chennai': 'India', 'Worcester': 'United States', 'Canberra': 'Australia', 'Al Amarat': 'Oman', 'Cairns': 'Australia', 'North Sydney': 'Australia', 'Dubai': 'United Arab Emirates', 'Potchefstroom': 'South Africa', 'Paarl': 'South Africa', 'ANZ Stadium': 'Australia', 'Bridgetown': 'Barbados', 'Manchester': 'United Kingdom', 'Bristol': 'United Kingdom', 'The Hague': 'Netherlands', 'Grantham': 'United Kingdom', 'Canterbury': 'United Kingdom', 'St. Kilda': 'United Kingdom', 'Hove': 'United Kingdom', 'Hambantota': 'Sri Lanka', 'Dambulla': 'Sri Lanka', 'Northwood': 'United States', 'Gold Coast': 'Australia', 'Greater Noida': 'India', 'Chesterfield': 'United States', 'Edinburgh': 'United Kingdom', 'Zahur Ahmed Chowdhury Stadium': 'Bangladesh', 'Bay Oval. Mount Maunganui': 'New Zealand', 'Harare Sports Club': 'Zimbabwe', 'Cardiff': 'United Kingdom', 'Launceston': 'Australia', 'Dominica': 'Dominican Republic', 'Jaipur': 'India', 'Johannesburg': 'South Africa', 'Chattogram': 'Bangladesh', 'Rotterdam': 'Netherlands', 'Blackpool': 'United Kingdom', 'Leicester': 'United Kingdom', 'Dharamsala': 'India', 'Guyana': 'Guyana', 'Rawalpindi': 'Pakistan', 'Northampton': 'United Kingdom', 'Bloemfontein': 'South Africa', 'Mohali': 'India', 'Napier': 'New Zealand'}
 def get_bbb(fixtureID):
     global country_cache
-    scorecard = requests.get("https://apiv2.cricket.com.au/web/views/scorecard?FixtureId=" + str(fixtureID) + "&jsconfig=eccn:true&format=json").json()
+    scorecard = make_request("https://apiv2.cricket.com.au/web/views/scorecard?FixtureId=" + str(fixtureID) + "&jsconfig=eccn:true&format=json")
     try: 
         if not 'fixture' in scorecard and not 'players' in scorecard:
             print('Invalid match ' + str(fixtureID))
@@ -169,10 +191,11 @@ def get_bbb(fixtureID):
     bbb = pd.DataFrame()
     num_inns = 4 if format in ['Test', 'First-Class'] else 2
     for inning in np.arange(1, num_inns+1):
-        root = requests.get("https://apiv2.cricket.com.au/web/views/comments?FixtureId="+ str(fixtureID)+ "&jsconfig=eccn:true&OverLimit=400&lastOverNumber=&IncludeVideoReplays=false&format=json&inningNumber=" + str(inning)).json()
+        root = make_request("https://apiv2.cricket.com.au/web/views/comments?FixtureId="+ str(fixtureID)+ "&jsconfig=eccn:true&OverLimit=400&lastOverNumber=&IncludeVideoReplays=false&format=json&inningNumber=" + str(inning))
         if not 'inning' in root:
             print('Skipping', fixtureID)
-            return
+            continue
+        print(fixtureID, inning)
         info = []
         try:
             innings = root['inning']['inningNumber']
@@ -310,6 +333,7 @@ def get_bbb(fixtureID):
             bbb["length"] = bbb["len/var"].apply(lambda x: get_length(x) if type(x)!=float else np.nan)
             bbb["area"] = bbb["zone"].apply(get_area)
             bbb["control"] = bbb["zone"].apply(get_control)
+            bbb["elevation"] = bbb["zone"].apply(get_elevation)
             bbb["line"] = bbb["shot"].apply(get_line)
             bbb["foot"] = bbb["shot"].apply(get_foot)
             bbb['fielder_action'] = bbb['commentary'].apply(get_fielder_action)
@@ -332,17 +356,15 @@ def main():
                     idx = id+1
         if missing_ids:
             missing_ids = sorted(set(range(min(missing_ids), max(missing_ids) + 1)).difference(missing_ids)) #[-min(20, len(missing_ids)):]
-            missing_ids = list(filter(lambda x: x > 12800, missing_ids))
+            missing_ids = list(filter(lambda x: x > 12000, missing_ids))
+            missing_ids = list(filter(lambda x: x < 16000, missing_ids))
     while True:
         if missing_ids:
-            fixtureID = missing_ids.pop(0)
-            match = get_bbb(fixtureID)
+            match = get_bbb(missing_ids.pop(0))
         else:
             match = get_bbb(idx)
             idx += 1
         if type(match) != type(None):
-            output = fixtureID if fixtureID else idx
-            print(output)
             match.to_csv(file, mode='a', header=not os.path.isfile(file), index=False)
 
 main()
