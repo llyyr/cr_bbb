@@ -12,10 +12,12 @@ import pandas as pd # Need pandas version 1.3
 pd.options.display.float_format = '{:.2f}'.format
 geolocator = Nominatim(user_agent="geoapiExercises")
 
-def make_request(url):
+MAX_HITS = 2
+
+def make_request(url, total_retries):
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0"})
-    retries = Retry(total=10, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+    retries = Retry(total=total_retries, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
     session.mount('http://', HTTPAdapter(max_retries=retries))
     session.mount('https://', HTTPAdapter(max_retries=retries))
     try:
@@ -137,7 +139,12 @@ skip = ['Caribbean Premier League', "'A' One-Day Quad-Series", 'England Domestic
 country_cache = {'Central Broward Regional Park Stadium Turf Ground': 'United States', 'Sydney': 'Australia', 'Guildford': 'United Kingdom', 'Durban': 'South Africa', 'Cape Town': 'South Africa', 'Pune': 'India', 'Durham': 'United States', 'Moe': 'United States', 'Nelson': 'New Zealand', 'Dublin': 'Ireland', 'Grenada': 'Grenada', 'Hamilton': 'Canada', 'Mumbai': 'India', 'Hyderabad': 'India', 'Christchurch': 'New Zealand', 'Visakhapatnam': 'India', 'Nettleworth': 'United Kingdom', 'Belfast': 'United Kingdom', 'Port of Spain': 'Trinidad and Tobago', 'Karachi': 'Pakistan', 'Brisbane': 'Australia', 'Scarborough': 'United Kingdom', 'Colombo': 'Sri Lanka', 'Dunedin': 'New Zealand', 'Perth': 'Australia', 'Docklands': 'Australia', 'Coffs Harbour': 'Australia', 'Amstelveen': 'Netherlands', 'Basseterre': 'Saint Kitts and Nevis', 'Multan': 'Pakistan', 'Kolkata': 'India', 'Bulawayo': 'Zimbabwe', 'Antigua': 'Antigua and Barbuda', 'Eastbourne': 'United Kingdom', 'Neath': 'United Kingdom', 'Bankstown': 'Australia', 'Dehradun': 'India', 'Thiruvananthapuram': 'India', 'Adelaide': 'Australia', 'Beckenham': 'United Kingdom', 'Chelmsford': 'United Kingdom', 'Southampton': 'United Kingdom', 'Hobart': 'Australia', 'Port Elizabeth': 'South Africa', 'Galle': 'Germany', 'Clontarf Cricket Club': 'Ireland', 'Sylhet Divisional Stadium': 'Bangladesh', 'Bengaluru': 'India', 'Auckland': 'New Zealand', 'Southport': 'United Kingdom', 'Guwahati': 'India', 'Lucknow': 'India', 'Sedbergh': 'United Kingdom', 'Nagpur': 'India', 'Radlett': 'United Kingdom', 'Cheltenham': 'United Kingdom', 'Kanpur': 'India', 'Melbourne': 'Australia', 'Delhi': 'India', 'East London': 'South Africa', 'Lahore': 'Pakistan', 'Sharjah': 'United Arab Emirates', 'Drummoyne': 'Australia', 'Centurion': 'South Africa', 'Abu Dhabi': 'United Arab Emirates', 'Newport': 'United States', 'Ahmedabad': 'India', 'Kandy': 'Sri Lanka', 'Derby': 'United Kingdom', 'The Ageas Bowl': 'United Kingdom', 'Gros Islet': 'Saint Lucia', 'Utrecht': 'Netherlands', 'Gosforth': 'United Kingdom', 'Derry': 'United Kingdom', 'Jamaica': 'Jamaica', 'London': 'United Kingdom', 'Ranchi': 'India', 'York': 'United Kingdom', 'Alice Springs': 'Australia', 'Cuttack': 'India', 'Geelong': 'Australia', 'Birmingham': 'United Kingdom', 'Liverpool ': 'United Kingdom', 'Townsville': 'Australia', 'Indore': 'India', 'Wollongong': 'Australia', 'Taunton': 'United Kingdom', 'Harare': 'Zimbabwe', 'Nottingham': 'United Kingdom', 'Wellington': 'New Zealand', 'Rajkot': 'India', 'Arundel': 'United Kingdom', 'Leeds': 'United Kingdom', 'Mirpur': 'Pakistan', 'Trinidad': 'Trinidad and Tobago', 'Chennai': 'India', 'Worcester': 'United States', 'Canberra': 'Australia', 'Al Amarat': 'Oman', 'Cairns': 'Australia', 'North Sydney': 'Australia', 'Dubai': 'United Arab Emirates', 'Potchefstroom': 'South Africa', 'Paarl': 'South Africa', 'ANZ Stadium': 'Australia', 'Bridgetown': 'Barbados', 'Manchester': 'United Kingdom', 'Bristol': 'United Kingdom', 'The Hague': 'Netherlands', 'Grantham': 'United Kingdom', 'Canterbury': 'United Kingdom', 'St. Kilda': 'United Kingdom', 'Hove': 'United Kingdom', 'Hambantota': 'Sri Lanka', 'Dambulla': 'Sri Lanka', 'Northwood': 'United States', 'Gold Coast': 'Australia', 'Greater Noida': 'India', 'Chesterfield': 'United States', 'Edinburgh': 'United Kingdom', 'Zahur Ahmed Chowdhury Stadium': 'Bangladesh', 'Bay Oval. Mount Maunganui': 'New Zealand', 'Harare Sports Club': 'Zimbabwe', 'Cardiff': 'United Kingdom', 'Launceston': 'Australia', 'Dominica': 'Dominican Republic', 'Jaipur': 'India', 'Johannesburg': 'South Africa', 'Chattogram': 'Bangladesh', 'Rotterdam': 'Netherlands', 'Blackpool': 'United Kingdom', 'Leicester': 'United Kingdom', 'Dharamsala': 'India', 'Guyana': 'Guyana', 'Rawalpindi': 'Pakistan', 'Northampton': 'United Kingdom', 'Bloemfontein': 'South Africa', 'Mohali': 'India', 'Napier': 'New Zealand'}
 def get_bbb(fixtureID):
     global country_cache
-    scorecard = make_request("https://apiv2.cricket.com.au/web/views/scorecard?FixtureId=" + str(fixtureID) + "&jsconfig=eccn:true&format=json")
+    for _ in range(MAX_HITS):
+        scorecard = make_request("https://apiv2.cricket.com.au/web/views/scorecard?FixtureId=" + str(fixtureID) + "&jsconfig=eccn:true&format=json", 10)
+        if 'fixture' in scorecard and 'players' in scorecard:
+            break
+        else:
+            print(f'Hit empty {fixtureID} scorecard, retrying')
     try: 
         if not 'fixture' in scorecard and not 'players' in scorecard:
             print('Invalid match ' + str(fixtureID))
@@ -191,9 +198,14 @@ def get_bbb(fixtureID):
     bbb = pd.DataFrame()
     num_inns = 4 if format in ['Test', 'First-Class'] else 2
     for inning in np.arange(1, num_inns+1):
-        root = make_request("https://apiv2.cricket.com.au/web/views/comments?FixtureId="+ str(fixtureID)+ "&jsconfig=eccn:true&OverLimit=400&lastOverNumber=&IncludeVideoReplays=false&format=json&inningNumber=" + str(inning))
+        for _ in range(MAX_HITS):
+            root = make_request("https://apiv2.cricket.com.au/web/views/comments?FixtureId="+ str(fixtureID)+ "&jsconfig=eccn:true&OverLimit=400&lastOverNumber=&IncludeVideoReplays=false&format=json&inningNumber=" + str(inning), 50)
+            if 'inning' in root:
+                break
+            else:
+                print(f'Hit empty {fixtureID} {inning}, retrying')
         if not 'inning' in root:
-            print('Skipping', fixtureID)
+            print(f'Skipping {fixtureID} {inning}')
             continue
         print(fixtureID, inning)
         info = []
@@ -205,7 +217,7 @@ def get_bbb(fixtureID):
             bowling_team = team_2 if bowling_team_id == _team_2_id else team_1
         except KeyError as e:
             print('KeyError', fixtureID)
-            return
+            continue
         for over in root['inning']['overs']:
             over_num = over['overNumber']
             if over_num == 0:
@@ -323,7 +335,7 @@ def get_bbb(fixtureID):
         
         info = pd.DataFrame(info)
         bbb = pd.concat((bbb, info))
-        if bbb.empty: return
+        if bbb.empty: continue
         try:
             bbb["len/var"] = bbb["commentary"].apply(helper3)
             bbb["shot"] = bbb["commentary"].apply(helper1)
