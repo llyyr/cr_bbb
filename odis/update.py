@@ -44,21 +44,20 @@ def get_match_data(match_id):
     url = 'http://site.web.api.espn.com/apis/site/v2/sports/cricket/8098/playbyplay?contentorigin=espn&event={}&page={}&period={}&section=cricinfo'
     for inn in [1, 2]:
         items = []
-        page_count = 20
+        page_count = 13
         for i in range(1, page_count+1):
-            while True:
-                r = req.get(url.format(match_id, i, inn)).json()
-                if 'commentary' in r: 
-                    page_count = r['commentary']['pageCount']
-                    if i > page_count:
-                        return
-                    items += r['commentary']['items']
-                    if items == []:
-                        return
+            if i > page_count:
+                break
+            r = req.get(url.format(match_id, i, inn)).json()
+            if 'commentary' in r:
+                page_count = r['commentary']['pageCount']
+                items += r['commentary']['items']
+                if items == []:
+                    print('no item on', url.format(match_id, i, inn), page_count)
                     break
-                else:
-                    print('Comms not found')
-                    return
+            else:
+                print('no comms on page', url.format(match_id, i, inn), page_count)
+                continue
         data[inn] = items
     if len(data[1] + data[2]) == 0:
         return
